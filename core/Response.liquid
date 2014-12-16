@@ -1,0 +1,59 @@
+<?php
+
+class Response
+{	
+    public static $data;  
+
+	public static $skin;
+	public static $layout;
+	public static $localization;
+	
+	private static $status;
+	private static $error;
+	private static $headers;
+
+	public static function init()
+	{
+		Response::$data			= array();
+		Response::$skin			= 'default';
+		Response::$layout		= 'default';
+		Response::$localization	= 'slovak';
+		Response::$status 		= 'OK';
+		Response::$headers		= array();
+	}
+	
+	public static function error( $message )
+	{
+		Response::$status = 'ERROR: '.$message;
+	}
+	
+	public static function header( $key, $value = null )
+	{
+		if( $value != null )
+		{
+			Response::$headers[$key] = $value;
+		}
+		
+		return isset(Response::$headers[$key]) ? Response::$headers[$key] : null;
+	}
+	
+	public static function headers()
+	{
+		header('Liquid-Status: '.Response::$status);
+		
+		foreach( Response::$headers as $header => $value )
+		{
+			if( $value == null || $value == '' ){ continue; }
+			
+			header($header.': '.$value);
+		}
+	}
+	
+	public static function redirect( $url = WEBROOT )
+	{
+		header('Location: '.$url);
+		die;
+	}
+}
+
+Response::init();

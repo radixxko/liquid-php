@@ -1,0 +1,30 @@
+<?
+
+class Event
+{
+	private static $engine = 'SQL'; // NodeJS
+
+	public static function emit( $id, $data )
+	{
+		$hash = '~';
+	
+		foreach( $id as $name => $value )
+		{
+			$hash .= $name.'='.$value.'~';
+		}
+	
+		Database::query('INSERT INTO events (EVENT_HASH, EVENT_DATA) VALUES (:hash, :data)', array('hash' => $hash, 'data' => json_encode($data)));
+	}
+	
+	public static function update( $eventID )
+	{
+		return Database::query('SELECT * FROM events WHERE EVENT_ID > :eventID', array('eventID' => $eventID));
+	}
+	
+	public static function getLastEventID()
+	{
+		$event = Database::row('SELECT EVENT_ID FROM events ORDER BY EVENT_ID DESC');
+	
+		return ( $event !== null ? (int) $event['EVENT_ID'] : 0 );
+	}
+}

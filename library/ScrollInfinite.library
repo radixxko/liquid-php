@@ -1,0 +1,53 @@
+<?php
+class ScrollInfinite
+{
+	public static function start( $options = array() )
+	{
+		echo '<div '.( isset( $options['id'] ) ? 'id="'.$options['id'].'" ' : '' ).'class="Scroll-wrapper"'.(isset( $options['outerScroll'] ) ? ' data-outerScroll="'.$options['outerScroll'].'" onmouseout="Scroll.leave(this)"' : '').' style="' . (isset($options['width']) ? 'width:' . $options['width'] . ';' : '') . (isset($options['height']) ? 'height:' . $options['height'] . ';' : '')
+				. '" onmouseover="Scroll.update(this)"><div class="Scroll-area"'.((isset($options['width']) && strpos($options['width'], '%') === false) ? ' style="width:'.(intval($options['width'])+30).'px;"' : '').' onscroll="Scroll.infinite(this' . (isset($options['wrapper']) ? ',\'' . $options['wrapper'] . '\'' : '') . ');Scroll.scroll(this);"><div class="Scroll-content" style="'
+				. (isset($options['width']) ? 'width:' . $options['width'] . ';' : '') . (isset($options['padding']) ? 'padding:' . $options['padding'] . ';' : '') . '">';
+		if (!isset($options['wrapper']))
+		{
+			if (isset($options['prev']) && $options['prev'] === false)
+			{
+				echo '<div class="Scroll-infinite-block" data-URL="" data-blockID=""></div>';
+			}
+			echo '<div class="Scroll-infinite-block" data-URL="' . $options['url'] . '" data-blockID="' . htmlentities(json_encode($options['blockID'])) . '">';
+		}
+	}
+	
+	public static function end( $options = array() )
+	{
+		if(!isset($options['wrapper']))
+		{
+			echo '</div>';
+			if (isset($options['next']) && $options['next'] === false) {
+				echo '<div class="Scroll-infinite-block" data-URL="" data-blockID=""></div>';
+			}
+		}
+		echo '</div></div><div class="Scroll-handle-area" onmousedown="return Scroll.click(event);"><div class="Scroll-handle" style="top:0px" onmousedown="return Scroll.drag(event);"></div></div></div>';
+	}
+	
+	public static function blockStart( $options = array() )
+	{
+		if (isset($options['prev']) && $options['prev'] === false)
+		{
+			echo '<div class="Scroll-infinite-block" data-URL="" data-blockID=""></div>';
+		}
+		echo '<div class="Scroll-infinite-block'.(isset($options['class']) ? ' '.$options['class'] : '').'" data-URL="' . $options['url'] . '" data-blockID="' . htmlentities(json_encode($options['blockID'])) . '">';
+	}
+	
+	public static function blockEnd( $options = array() )
+	{
+		echo '</div>';
+		if (isset($options['next']) && $options['next'] === false)
+		{
+			echo '<div class="Scroll-infinite-block" data-URL="" data-blockID=""></div>';
+		}
+	}
+	
+	public static function finish()
+	{
+		echo '<div class="Scroll-infinite-block" data-URL="" data-blockID=""></div>';
+	}
+}

@@ -1,0 +1,27 @@
+<?
+
+class Scroll
+{
+	public static function start( $options = array() )
+	{
+		?><div class="Scroll-wrapper" onmouseover="Scroll.update(this);"><div class="Scroll-area" onscroll="Scroll.scroll(this);"><div class="Scroll-content"<?=(isset($options['padding']) ? ' style="padding:'.$options['padding'].';"' : '' )?>><?
+	}
+	
+	public static function end( $options = array() )
+	{
+		?></div></div><div class="Scroll-handle-area"><div class="Scroll-handle" style="top:0px" onmousedown="return Scroll.drag(event);"></div></div></div><?
+	}
+}
+/*
+public function scroll($action, $options = array()) {
+		if ($action == 'start') {
+			echo '<div class="AZ_Scroll-wrapper"'.(isset( $options['outerScroll'] ) ? ' data-outerScroll="'.$options['outerScroll'].'" onmouseout="AZ.Scroll.leave(this)"' : '').' style="' . (isset($options['width']) ? 'width:' . $options['width'] . ';' : '') . (isset($options['height']) ? 'height:' . $options['height'] . ';' : ''). (isset($options['max-height']) ? 'max-height:' . $options['max-height'] . ';' : '')
+					. '" onmouseover="AZ.Scroll.update(this)"><div class="AZ_Scroll-area"'.((isset($options['width']) && strpos($options['width'], '%') === false) ? ' style="width:'.(intval($options['width'])+30).'px;"' : '').' onscroll="AZ.Scroll.scroll(this);' . (isset($options['onscroll']) ? $options['onscroll'] : '') . '"><div class="AZ_Scroll-content" style="' . (isset($options['width']) ? 'width:' . $options['width'] . ';' : '')
+					. (isset($options['padding']) ? 'padding:' . $options['padding'] . ';' : '') . '">';
+		} else if ($action == 'end') {
+			echo '</div></div><div class="AZ_Scroll-handle-area"><div class="AZ_Scroll-handle" style="top:0px" onmousedown="return AZ.Scroll.drag(event);"></div></div></div>';
+		} else {
+			throw new Exception('Ta bud "start" alebo "end" tam napis do scrollu!');
+		}
+	}
+*/

@@ -1,0 +1,47 @@
+<?php
+
+class Request
+{	
+	public static $uri;
+    public static $data;  
+	public static $type; 	/* AJAX | JSON | HTML */
+	private static $device; 	/* array width,height,os,browser */
+	public static $method; 	/* POST | GET */
+
+	public static $project;
+	public static $module;
+	public static $controller;
+	public static $action;
+
+	public static function init()
+	{	
+		Request::$uri 		= array();
+		Request::$data		= array_merge($_GET,$_POST);
+		Request::$type		= 'HTML';
+		//Request::$device	= $browser = get_browser(null, true);
+		Request::$method 	= $_SERVER['REQUEST_METHOD'];
+
+		//$uri = explode('/',substr($_SERVER['REQUEST_URI'],1));
+		$uri = substr($_SERVER['REQUEST_URI'], strlen(WEBROOT) - strpos(WEBROOT,'/',8)); // Remove Webroot
+		list($uri,) = explode('?',$uri); // Remove GET Data
+		$uri = explode('/', $uri);
+		foreach ( $uri as $key => $val ) if ( !empty($val) ) Request::$uri[] = $uri[$key];
+	}
+
+	public static function parseData( $uri_offset )
+	{
+		$data_cnt = count( Request::$uri );
+		for( $i = $uri_offset; $i < $data_cnt; )
+		{
+			@Request::$data[Request::$uri[$i]] = Request::$uri[$i+1];
+			$i += 2;
+		}				
+	}
+	
+	public static function data( $name, $default = null )
+	{
+		return isset( Request::$data[$name] ) ? Request::$data[$name] : $default;
+	}
+}
+
+Request::init();

@@ -1,0 +1,77 @@
+<?php
+
+class Router
+{	
+	public static function route()
+	{
+		Request::$project = PROJECT;
+	
+		if( empty( Request::$uri[0] ) )
+		{
+			Request::$module		= 'WEB';
+			Request::$controller	= 'home';
+			Request::$action		= 'init';
+		}
+		else
+		{
+			switch( Request::$uri[0] )
+			{
+				case 'api':
+					{
+						if( !isset( Request::$uri[1] ) || !isset( Request::$uri[2] ) )
+						{
+							die( 'Unhandled Exception [core/Router]: Read API documentation' );
+						}
+					
+						Request::$module		= 'API';
+						Request::$controller	= Request::$uri[1];
+						Request::$action		= Request::$uri[2];
+						
+						Request::parseData(3);
+					}
+					break;
+				case 'system':
+					{
+						if( !isset( Request::$uri[1] ) || !isset( Request::$uri[2] ) )
+						{
+							die( 'Unhandled Exception [core/Router]: Hacker alert' );
+						}
+					
+						Request::$module		= 'SYSTEM';
+						Request::$controller	= Request::$uri[1];
+						Request::$action		= Request::$uri[2];
+						
+						Request::parseData(3);
+					}
+					break;
+				case 'admin':
+					{
+						Request::$module		= 'ADMIN';
+						Request::$controller	= isset( Request::$uri[1] ) ? Request::$uri[1] : 'home';
+						Request::$action		= isset( Request::$uri[2] ) ? Request::$uri[2] : 'init';		
+						
+						Request::parseData(3);	
+					}
+					break;
+				case 'some_crazy_matching':
+					{
+						Request::$module		= 'APP';
+						Request::$controller	= isset( Request::$uri[1] ) ? Request::$uri[1] : 'home';
+						Request::$action		= isset( Request::$uri[2] ) ? Request::$uri[2] : 'init';		
+						
+						Request::parseData(3);	
+					}
+					break;
+				default:
+					{
+						Request::$module		= 'WEB';
+						Request::$controller	= isset( Request::$uri[0] ) ? Request::$uri[0] : 'home';
+						Request::$action		= isset( Request::$uri[1] ) ? Request::$uri[1] : 'init';
+						
+						Request::parseData(2);
+					}
+					break;
+			}
+		}
+	}
+}

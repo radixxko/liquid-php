@@ -1,0 +1,140 @@
+<?php
+ 
+spl_autoload_register( function( $class )
+{
+    if( ( $class === 'Database' ) || ( $class === 'Model' ) || ( $class === 'Request' ) || ( $class === 'Response' ) || ( $class === 'Router' ) || ( $class === 'Session' ) )
+	{
+		require_once LIQUID.'core/'.$class.'.liquid';
+	}
+	else if( $class == ucfirst(Request::$controller).'_controller' )
+	{
+		switch( Request::$module )
+		{
+			case 'API'	: require_once ROOT.'api/'.ucfirst(Request::$controller).'.controller'; break;
+			case 'WEB'	: require_once ROOT.'web/screens/'.strtolower(Request::$controller).'/'.ucfirst(Request::$controller).'.controller'; break;
+			default 	: trigger_error('Autoload not yet implemented', E_USER_NOTICE);
+		}
+	}
+	else if( strpos($class, '_smart') === strlen($class) - 6 )
+	{
+		require_once ROOT.'core/smart/'.substr($class, 0, -6).'.smart';
+	}
+	else if( strpos($class, '_helper') === strlen($class) - 7 )
+	{
+		require_once ROOT.'core/helper/'.substr($class, 0, -7).'.helper';
+	}
+	else if( strpos($class, '_model') === strlen($class) - 6 )
+	{
+		require_once ROOT.'core/model/'.substr($class, 0, -6).'.model';
+	}
+	else if( file_exists(LIQUID.'library/'.$class.'.library') )
+	{
+		require_once LIQUID.'library/'.$class.'.library';
+	}
+	else trigger_error('LIQUID: Autoload not yet implemented', E_USER_NOTICE);
+});
+
+function dump( $variable, $die = false )
+{
+	echo '<pre>'; 
+	ob_start();
+	var_dump($variable);
+	$dump = ob_get_clean();
+	$dump = str_replace('<','&lt;',$dump);
+	$dump = preg_replace('/([^=])>/','\\1/&gt;',$dump);
+	echo preg_replace('/=>\s+([^\s]+)/', '=> <span style="color:#bb8800;font-size:0.75em">$1</span>', $dump);
+	echo '</pre>';
+	
+	if( $die ){ die; }
+}
+
+register_shutdown_function('handleShutdown');
+function handleShutdown()
+{
+	$error = error_get_last();
+	
+	if( !empty($error) && ( $error['type'] & ( E_ALL ^ E_NOTICE ^ E_STRICT ) ) )
+	{	
+		if( !isset($error['line']) || $error['line'] == 0 ) return;
+	
+		$errorMessage = $error['message'].' [ line '.$error['line'].' : '.$error['file'].' ]';
+		
+		echo $errorMessage;
+		
+		dump($errorMessage, 'ERROR');
+	}
+}
+
+class Liquid
+{
+	public static function url( $options = array() )
+	{
+		$options = array_merge( array( 'application' => Request::$application, 'controller' => Request::$controller, 'action' => Request::$action ), $options );
+
+		$url = 'http://'.$options['application'].'.'.DOMAIN.'/'.$options['controller'].'/'.$options['action'].'/';
+
+		if( isset($options['data']) )
+			foreach( $options['data'] as $key => &$value )
+				$url .= $key.'/'.$value.'/';
+
+		return $url;
+	}
+	
+	public static function uri( $type, $resource = null )
+	{
+		if( $resource == null )
+		{
+			return defined('WEBROOT_PREFIX') ? WEBROOT_PREFIX.$type : WEBROOT.$type;
+		}
+	
+		switch ( $type )
+		{
+			case 'data'		: return WEBROOT.Request::$application.'/data/'.$resource; break;
+			case 'script'	: return WEBROOT.'web/scripts/'.$resource.'.js';
+			case 'style'	: return WEBROOT.'web/styles/'.$resource.'.css';
+		}
+	}
+
+	public static function process( )
+	{
+		$start = microtime(true);
+	
+		header('Cache-Control: no-cache, must-revalidate');
+		header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+		
+		Router::route();
+		
+		if( Request::$controller == 'events' )
+		{
+			if( Request::$action == 'update' )
+			{
+				echo json_encode(Event::update(Request::data('eventID',0)));
+			}
+		}
+		else try
+		{
+			if( Request::$module == 'API' )
+			{
+				header('Access-Control-Allow-Origin: *');
+			}
+			
+			$render = forward_static_call( array(ucfirst(Request::$controller).'_controller', Request::$action) );
+			
+			header('Liquid-Benchmark: '.round( (microtime(true)-$start)*1000 ).'ms');
+			Response::headers();
+			
+			if( ( Request::$module == 'WEB' ) && ( Request::$action == 'init' ) )
+			{
+				require ROOT.'web/screens/'.strtolower(Request::$controller).'/'.ucfirst(Request::$controller).'.render';
+			}
+			else if( ( Request::$module == 'WEB' ) && ( $render === true ) )
+			{
+				require ROOT.'web/screens/'.strtolower(Request::$controller).'/'.Request::$action.'.render';
+			}
+			else echo json_encode( Response::$data );
+		}
+		catch( Exception $e ){ echo '{"STATUS":"ERROR"}'; }
+	}
+}
+
+if( !defined('LIQUID_PROCESS') || ( LIQUID_PROCESS != false ) ) Liquid::process();

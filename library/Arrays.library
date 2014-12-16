@@ -1,0 +1,23 @@
+<?
+
+class Arrays
+{
+	public static function map( $array, $key, $multi = false )
+	{
+		$map = array();
+		
+		foreach( $array as $item )
+		{
+			if( $multi )
+			{
+				$map[$item[$key]][] = $item;
+			}
+			else
+			{
+				$map[$item[$key]] = $item;
+			}
+		}
+		
+		return $map;
+	}
+}

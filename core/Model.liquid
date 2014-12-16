@@ -1,0 +1,169 @@
+<?php     
+
+class Model
+{   
+	private static function toSQLData( &$type, &$value )
+	{
+		switch( $type )
+		{
+			case 'INT': 
+								return intval($value); 
+								break;
+			case 'SERIALIZED':
+								return '"'.addcslashes(serialize($value),'\\"').'"';
+								break;
+			case 'SET':
+								return '"'.addcslashes(( is_array($value) ? implode(',',$value) : $value ),'\\"').'"';
+								break;
+			case 'DATETIME':	
+								return '"'.addcslashes($value,'\\"').'"';
+								break;
+			default:			
+								return '"'.addcslashes($value,'\\"').'"';
+								break;
+		}
+	}
+	
+	private static function fromSQLData( &$type, &$value )
+	{
+		switch( $type )
+		{
+			case 'SERIALIZED':
+								return unserialize($value);
+								break;
+			case 'SET':
+								return explode(',', $value);
+								break;
+			default:			
+								return $value;
+								break;
+		}
+	}
+	
+	public static function prepareData( &$data, $required, $defaults )
+	{
+		foreach( $required as &$key )
+		{
+			if( !isset( $data[$key] ) ) return false;
+		}
+		foreach( $defaults as $key => &$value )
+		{
+			if( !isset( $data[$key] ) ) $data[$key] = $value;
+		}
+		return true;
+	}
+
+	public static function isValid( $data, $model = '' )
+	{
+		return true;
+	}
+	
+	public static function selectQuery( $model, $query )
+	{
+		$result = Database::query( $query );
+	
+		if( empty($result) ) return $result;
+		
+		$toConvert = array();
+		foreach( $model::$tableStructure as $attribute => $type )
+		{
+			if( $type == 'SERIALIZED' )
+			{
+				$toConvert[$attribute] = $type;
+			}
+			else if( $type == 'SET' )
+			{
+				$toConvert[$attribute] = $type;
+			}
+		}
+		
+		if( empty($toConvert) ) return $result;
+		
+		foreach( $result as &$row )
+		{
+			foreach( $toConvert as $attribute => $type )
+			{
+				$row[$attribute] = self::fromSQLData( $type, $row[$attribute] );
+			}
+		}
+		
+		return $result;
+	}
+	
+	public static function select( $model, $condition = '', $order = '', $limit = '' )
+	{
+		return self::selectQuery( $model, 'SELECT * FROM '.$model::$tableName.( ($condition != '') ? ( ' WHERE '.$condition ) : ( '' )  ).( ($order != '') ? ( ' ORDER BY '.$order ) : ( '' ) ).( ($limit != '') ? ( ' LIMIT '.$limit ) : ( '' ) ) );
+    }
+	
+  	public static function insert( $data, $model = '' )
+	{
+		$model = ( $model !== '' ) ? $model : $data[''];
+		
+		if ( Model::isValid( $data, $model ) )
+		{
+			$columns	= array();
+			$values		= array();
+			
+			foreach ( $model::$tableStructure as $attribute => $type )
+			{
+				if ( ( !$model::$autoIncrement ) || ( !in_array($attribute, $model::$primaryKey ) ) )
+				{	
+					$value = ( isset( $model::$values[$attribute] ) ? $model::$values[$attribute] : ( isset($data[$attribute]) ? $data[$attribute] : $model::$default_values[$attribute] ) );
+							
+					$columns[] 	= $attribute;
+					$values[]	= self::toSQLData( $type, $value );
+					
+				}
+			}
+			
+			return Database::query( 'INSERT INTO '.$model::$tableName.' ('.implode(',',$columns).') VALUES ('.implode(',',$values).')' );
+		}
+		return false;
+  	}
+  
+  	public static function update( $data, $model = '' )
+  	{
+  		$model = ( $model !== '' ) ? $model : $data[''];
+  		
+    	if ( Model::isValid( $data, $model ) )
+    	{
+			$keys	= array();
+			$values	= array();
+			
+			foreach ( $model::$tableStructure as $attribute => $type )
+			{
+				if ( isset( $data[$attribute] ) ||  isset( $model::$values[$attribute] ) )
+				{
+					$value = ( isset( $model::$values[$attribute] ) ? $model::$values[$attribute] : $data[$attribute] );
+					$value = $attribute.'='.self::toSQLData( $type, $value );
+					
+					if ( in_array($attribute, $model::$primaryKey) )
+					{
+						$keys[] = $value;
+					}
+					else
+					{
+						$values[] = $value;
+					}
+				}
+			}
+			
+			return Database::query( 'UPDATE '.$model::$tableName. ' SET '.implode(',',$values).' WHERE '.implode(',',$keys) );	
+		}
+		return false;
+  	}
+	
+	public static function delete( $data, $model = '' )
+	{
+		$model = ( $model !== '' ) ? $model : $data[''];
+		
+		$keys = array();
+		
+		foreach( $model::$primaryKey as $attribute )
+		{
+			$keys[] = $attribute.'='.self::toSQLData( $model::$tableStructure[$attribute], $data[$attribute] );	
+		}
+			
+		return Database::query( 'DELETE FROM '.$model::$tableName.' WHERE '.implode(',',$keys) );
+	}
+}

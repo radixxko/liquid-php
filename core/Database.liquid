@@ -1,0 +1,88 @@
+<?php
+
+// mysqli::query( $query, MYSQLI_ASYNC );
+
+class Database
+{    
+	private static $_DB_HOST     	= DB_HOST;
+	private static $_DB_USER    	= DB_USER;
+	private static $_DB_DATABASE 	= DB_DATABASE;
+	private static $_DB_PASSWORD 	= DB_PASSWORD;
+	private static $_DB_SOCKET   	= DB_SOCKET;
+	
+	private static $_DB_Connected 	= false;
+	private static $_DB_SQL_CONN 	= null;
+	
+	private static function connect()
+	{
+		if ( !self::$_DB_Connected )
+		{
+			self::$_DB_SQL_CONN = new mysqli( self::$_DB_HOST, self::$_DB_USER, self::$_DB_PASSWORD, self::$_DB_DATABASE, 0, self::$_DB_SOCKET );
+			if ( self::$_DB_SQL_CONN )
+			{
+				self::$_DB_SQL_CONN->set_charset("utf8");
+				return ( self::$_DB_Connected = true );			
+			}
+			else
+			{
+				return ( self::$_DB_Connected = false ); // mysqli_connect_error()
+			}
+		}
+		return true;
+	}
+	
+	public static function escape( $query, $data = null )
+	{
+		if( $data == null )
+		{
+			return '"'.addcslashes($query,'\\"').'"';
+		}
+		
+		return preg_replace_callback( '/:([0-9a-zA-Z\-_]+)/', function($match) use (&$data){ return '"'.addcslashes($data[$match[1]],'\\"').'"'; }, $query);
+	}
+			
+	public static function query( $query, $data = null, &$status = false )
+	{	
+		if( !empty($data) ){ $query = self::escape($query, $data); }
+		
+		if ( self::$_DB_Connected || self::connect() )
+		{
+			@$db_result = self::$_DB_SQL_CONN->query( $query );
+			if ( !$db_result )
+			{
+				$result = null;
+			}
+			else
+			{
+				if ( is_object( $db_result ) )
+				{
+					$result = array( );
+					while ( $result[] = $db_result->fetch_assoc() ); array_pop( $result );
+				}
+				else
+				{
+					$result = $db_result;
+				}
+			}
+		}
+		
+		if ( $status !== false )
+		{
+			$status = array( 'QUERY' => $query, 'ROWS' => self::$_DB_SQL_CONN->affected_rows, 'ID' => self::$_DB_SQL_CONN->insert_id );
+		}
+		
+		return $result;
+	}
+	
+	public static function row( $query, $data = null, &$status = false )
+	{
+		if( stripos( $query, 'LIMIT' ) === false )
+		{
+			$query .= ' LIMIT 1';
+		}
+		
+		$row = Database::query( $query, $data, $status );
+		
+		return ( !empty($row) ) ? $row[0] : null;
+	}
+}
